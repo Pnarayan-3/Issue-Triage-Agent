@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
 )
 
 func main() {
@@ -19,10 +20,16 @@ func main() {
 	fmt.Println("Issue Number:", issueNumber)
 	fmt.Println("Issue Title:", issueTitle)
 
-	fmt.Println("\nIssue Body:")
-	fmt.Println(issueBody)
+	fmt.Println("\nSending issue to AI...")
 
-	fmt.Println("\n=================================")
-	fmt.Println("Triage agent received the issue")
-	fmt.Println("=================================")
+	client := ai.NewClient()
+
+	_, err := client.Analyze(issueTitle, issueBody)
+
+	if err != nil {
+		fmt.Println("❌ AI analysis failed:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("\n✅ AI analysis completed")
 }
