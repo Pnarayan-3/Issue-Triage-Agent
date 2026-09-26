@@ -122,8 +122,8 @@ Body:
 
 	generatedText := geminiResponse.Candidates[0].Content.Parts[0].Text
 
-	fmt.Println("\nAI generated JSON:")
-	fmt.Println(generatedText)
+	// fmt.Println("\nAI generated JSON:")
+	// fmt.Println(generatedText)
 
 	var result TriageResult
 

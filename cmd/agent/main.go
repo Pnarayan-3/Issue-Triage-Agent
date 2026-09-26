@@ -32,19 +32,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("\n=================================")
+	fmt.Println()
+	fmt.Println("==============================================")
 	fmt.Println("📋 TRIAGE RESULT")
-	fmt.Println("=================================")
+	fmt.Println("==============================================")
 
-	fmt.Println("Type:", result.Type)
-	fmt.Println("Priority:", result.Priority)
-	fmt.Println("Severity:", result.Severity)
-	fmt.Println("Component:", result.Component)
-	fmt.Println("Team:", result.Team)
-	fmt.Println("Labels:", result.Labels)
-	fmt.Println("Summary:", result.Summary)
-	fmt.Println("Reason:", result.Reason)
-	fmt.Printf("Confidence: %.2f\n", result.Confidence)
+	fmt.Printf("Type        : %s\n", result.Type)
+	fmt.Printf("Priority    : %s\n", result.Priority)
+	fmt.Printf("Severity    : %s\n", result.Severity)
+	fmt.Printf("Component   : %s\n", result.Component)
+	fmt.Printf("Team        : %s\n", result.Team)
 
-	fmt.Println("\n✅ AI analysis completed")
+	fmt.Println()
+	fmt.Println("🏷️ Labels")
+
+	for _, label := range result.Labels {
+		fmt.Printf("   • %s\n", label)
+	}
+
+	fmt.Println()
+	fmt.Println("📝 Summary")
+	fmt.Println(result.Summary)
+
+	fmt.Println()
+	fmt.Println("💡 Reason")
+	fmt.Println(result.Reason)
+
+	fmt.Println()
+	fmt.Printf("🎯 Confidence : %.0f%%\n", result.Confidence*100)
+
+	fmt.Println()
+	fmt.Println("==============================================")
+	fmt.Println("✅ Triage completed")
+	fmt.Println("==============================================")
+	//fmt.Println("\n✅ AI analysis completed")
 }
