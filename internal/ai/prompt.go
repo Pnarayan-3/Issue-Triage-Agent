@@ -54,4 +54,20 @@ Rules:
 - Keep labels short and useful.
 - Confidence must be between 0.0 and 1.0.
 - Return ONLY valid JSON.
+- Do NOT use markdown code fences.
+- Do NOT include any text before or after the JSON.
+
+Return exactly this structure:
+
+{
+  "type": "BUG",
+  "priority": "HIGH",
+  "severity": "HIGH",
+  "component": "BACKEND",
+  "team": "BACKEND",
+  "labels": ["bug", "backend"],
+  "summary": "Short summary of the issue",
+  "reason": "Why the issue was classified this way",
+  "confidence": 0.92
+}
 `

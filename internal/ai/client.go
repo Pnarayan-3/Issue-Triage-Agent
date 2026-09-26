@@ -13,6 +13,22 @@ type Client struct {
 	APIKey string
 }
 
+type GeminiResponse struct {
+	Candidates []Candidate `json:"candidates"`
+}
+
+type Candidate struct {
+	Content Content `json:"content"`
+}
+
+type Content struct {
+	Parts []Part `json:"parts"`
+}
+
+type Part struct {
+	Text string `json:"text"`
+}
+
 func NewClient() *Client {
 	return &Client{
 		APIKey: os.Getenv("GEMINI_API_KEY"),
@@ -89,8 +105,32 @@ Body:
 		)
 	}
 
-	fmt.Println("Gemini raw response:")
-	fmt.Println(string(responseBody))
+	var geminiResponse GeminiResponse
 
-	return nil, nil
+	err = json.Unmarshal(responseBody, &geminiResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse Gemini response: %w", err)
+	}
+
+	if len(geminiResponse.Candidates) == 0 {
+		return nil, fmt.Errorf("Gemini returned no candidates")
+	}
+
+	if len(geminiResponse.Candidates[0].Content.Parts) == 0 {
+		return nil, fmt.Errorf("Gemini returned no content")
+	}
+
+	generatedText := geminiResponse.Candidates[0].Content.Parts[0].Text
+
+	fmt.Println("\nAI generated JSON:")
+	fmt.Println(generatedText)
+
+	var result TriageResult
+
+	err = json.Unmarshal([]byte(generatedText), &result)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse triage JSON: %w", err)
+	}
+
+	return &result, nil
 }

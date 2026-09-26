@@ -25,12 +25,26 @@ func main() {
 
 	fmt.Println("\nSending issue to AI...")
 
-	_, err := client.Analyze(issueTitle, issueBody)
+	result, err := client.Analyze(issueTitle, issueBody)
 
 	if err != nil {
 		fmt.Println("❌ AI analysis failed:", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("\n=================================")
+	fmt.Println("📋 TRIAGE RESULT")
+	fmt.Println("=================================")
+
+	fmt.Println("Type:", result.Type)
+	fmt.Println("Priority:", result.Priority)
+	fmt.Println("Severity:", result.Severity)
+	fmt.Println("Component:", result.Component)
+	fmt.Println("Team:", result.Team)
+	fmt.Println("Labels:", result.Labels)
+	fmt.Println("Summary:", result.Summary)
+	fmt.Println("Reason:", result.Reason)
+	fmt.Printf("Confidence: %.2f\n", result.Confidence)
 
 	fmt.Println("\n✅ AI analysis completed")
 }
