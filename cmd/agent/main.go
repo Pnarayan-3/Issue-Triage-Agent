@@ -8,21 +8,29 @@ import (
 )
 
 func main() {
+	issueNumber := os.Getenv("ISSUE_NUMBER")
+	issueTitle := os.Getenv("ISSUE_TITLE")
+	issueBody := os.Getenv("ISSUE_BODY")
+	repository := os.Getenv("REPOSITORY")
 
 	fmt.Println("=================================")
 	fmt.Println("🤖 Issue Triage Agent")
 	fmt.Println("=================================")
 
+	fmt.Println("Repository:", repository)
+	fmt.Println("Issue Number:", issueNumber)
+	fmt.Println("Issue Title:", issueTitle)
+
 	client := ai.NewClient()
 
-	err := client.ListModels()
+	fmt.Println("\nSending issue to AI...")
+
+	_, err := client.Analyze(issueTitle, issueBody)
 
 	if err != nil {
-		fmt.Println("❌ Could not list models:", err)
+		fmt.Println("❌ AI analysis failed:", err)
 		os.Exit(1)
 	}
 
-	fmt.Println("=================================")
-	fmt.Println("✅ Model listing completed")
-	fmt.Println("=================================")
+	fmt.Println("\n✅ AI analysis completed")
 }
