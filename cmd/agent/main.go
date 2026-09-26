@@ -22,14 +22,22 @@ func main() {
 
 	fmt.Println("\nSending issue to AI...")
 
+	// client := ai.NewClient()
+
+	// _, err := client.Analyze(issueTitle, issueBody)
+
+	// if err != nil {
+	// 	fmt.Println("❌ AI analysis failed:", err)
+	// 	os.Exit(1)
+	// }
+
+	// fmt.Println("\n✅ AI analysis completed")
 	client := ai.NewClient()
 
-	_, err := client.Analyze(issueTitle, issueBody)
+	err := client.ListModels()
 
 	if err != nil {
-		fmt.Println("❌ AI analysis failed:", err)
+		fmt.Println("❌ Could not list models:", err)
 		os.Exit(1)
 	}
-
-	fmt.Println("\n✅ AI analysis completed")
 }
