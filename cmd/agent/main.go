@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
 )
 
 func main() {
@@ -31,6 +32,13 @@ func main() {
 		fmt.Println("❌ AI analysis failed:", err)
 		os.Exit(1)
 	}
+
+	if err := triage.Validate(result); err != nil {
+	fmt.Println("❌ Triage validation failed:", err)
+	os.Exit(1)
+	}
+
+	fmt.Println("✅ Triage result validated")
 
 	fmt.Println()
 	fmt.Println("==============================================")
