@@ -79,7 +79,26 @@ func main() {
 	comment := triage.BuildComment(result)
 
 	fmt.Println()
+	fmt.Println("🔍 Checking for existing triage comment...")
+
+	comments, err := githubClient.GetComments(issueNumber)
+
+	if err != nil {
+		fmt.Println("❌ Failed to retrieve issue comments:", err)
+		os.Exit(1)
+	}
+
+	if triage.HasTriageComment(comments) {
+		fmt.Println("⚠️ Triage comment already exists")
+		fmt.Println("   Skipping duplicate comment")
+	} else {
+
+	fmt.Println("✅ No existing triage comment found")
+
+	fmt.Println()
 	fmt.Println("💬 Posting triage comment...")
+
+	comment := triage.BuildComment(result)
 
 	err = githubClient.AddComment(issueNumber, comment)
 
@@ -89,6 +108,7 @@ func main() {
 	}
 
 	fmt.Println("✅ Triage comment posted")
+	}
 
 	fmt.Println()
 	fmt.Println("==============================================")
