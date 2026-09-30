@@ -184,3 +184,60 @@ func (c *Client) AddComment(issueNumber string, comment string) error {
 		body,
 	)
 }
+
+func (c *Client) GetComments(issueNumber string) ([]string, error) {
+
+	url := fmt.Sprintf(
+		"https://api.github.com/repos/%s/issues/%s/comments",
+		c.Repository,
+		issueNumber,
+	)
+
+	req, err := http.NewRequest(
+		http.MethodGet,
+		url,
+		nil,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf(
+			"GitHub API returned status %d: %s",
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	var comments []struct {
+		Body string `json:"body"`
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&comments)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0, len(comments))
+
+	for _, comment := range comments {
+		result = append(result, comment.Body)
+	}
+
+	return result, nil
+}
