@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"io"
 )
 
 type Client struct {
@@ -76,6 +77,93 @@ func (c *Client) AddLabels(issueNumber string, labels []string) error {
 		url,
 		body,
 	)
+}
+
+func (c *Client) CreateLabel(label string) error {
+
+	url := fmt.Sprintf(
+		"https://api.github.com/repos/%s/labels",
+		c.Repository,
+	)
+
+	body := map[string]string{
+		"name":        label,
+		"color":       "6B7280",
+		"description": "Automatically created by Issue Triage Agent",
+	}
+
+	return c.request(
+		http.MethodPost,
+		url,
+		body,
+	)
+}
+
+func (c *Client) EnsureLabels(labels []string) error {
+
+	for _, label := range labels {
+
+		url := fmt.Sprintf(
+			"https://api.github.com/repos/%s/labels/%s",
+			c.Repository,
+			label,
+		)
+
+		req, err := http.NewRequest(
+			http.MethodGet,
+			url,
+			nil,
+		)
+
+		if err != nil {
+			return err
+		}
+
+		req.Header.Set("Authorization", "Bearer "+c.Token)
+		req.Header.Set("Accept", "application/vnd.github+json")
+		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+		resp, err := http.DefaultClient.Do(req)
+
+		if err != nil {
+			return err
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			resp.Body.Close()
+
+			fmt.Printf("   ✓ Label exists: %s\n", label)
+			continue
+		}
+
+		if resp.StatusCode == http.StatusNotFound {
+			resp.Body.Close()
+
+			fmt.Printf("   + Creating label: %s\n", label)
+
+			if err := c.CreateLabel(label); err != nil {
+				return fmt.Errorf(
+					"failed to create label %q: %w",
+					label,
+					err,
+				)
+			}
+
+			continue
+		}
+
+		body, _ := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		return fmt.Errorf(
+			"failed to check label %q: GitHub returned status %d: %s",
+			label,
+			resp.StatusCode,
+			string(body),
+		)
+	}
+
+	return nil
 }
 
 func (c *Client) AddComment(issueNumber string, comment string) error {

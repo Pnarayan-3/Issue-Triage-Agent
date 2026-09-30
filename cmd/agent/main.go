@@ -46,6 +46,21 @@ func main() {
 	fmt.Println()
 	fmt.Println("🏷️ Applying GitHub labels...")
 
+	fmt.Println()
+	fmt.Println("🏷️ Checking GitHub labels...")
+
+	err = githubClient.EnsureLabels(result.Labels)
+
+	if err != nil {
+		fmt.Println("❌ Failed to ensure labels:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ All labels are ready")
+
+	fmt.Println()
+	fmt.Println("🏷️ Applying GitHub labels...")
+
 	err = githubClient.AddLabels(issueNumber, result.Labels)
 
 	if err != nil {
