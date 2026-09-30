@@ -6,6 +6,7 @@ import (
 
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/github"
 )
 
 func main() {
@@ -39,6 +40,20 @@ func main() {
 	}
 
 	fmt.Println("✅ Triage result validated")
+
+	githubClient := github.NewClient()
+
+	fmt.Println()
+	fmt.Println("🏷️ Applying GitHub labels...")
+
+	err = githubClient.AddLabels(issueNumber, result.Labels)
+
+	if err != nil {
+		fmt.Println("❌ Failed to apply labels:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Labels applied")
 
 	fmt.Println()
 	fmt.Println("==============================================")
