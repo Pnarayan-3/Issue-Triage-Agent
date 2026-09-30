@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"time"
 )
 
 type Client struct {
@@ -88,19 +89,68 @@ Body:
 
 	req.Header.Set("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
+	const maxRetries = 3
 
-	defer resp.Body.Close()
+	var responseBody []byte
 
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	for attempt := 1; attempt <= maxRetries; attempt++ {
 
-	if resp.StatusCode != http.StatusOK {
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		responseBody, err = io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		// Retry temporary Gemini errors
+		if resp.StatusCode == http.StatusServiceUnavailable ||
+			resp.StatusCode == http.StatusTooManyRequests {
+
+			if attempt == maxRetries {
+				return nil, fmt.Errorf(
+					"Gemini API failed after %d attempts: status %d: %s",
+					maxRetries,
+					resp.StatusCode,
+					string(responseBody),
+				)
+			}
+
+			waitSeconds := 1 << (attempt - 1)
+
+			fmt.Printf(
+				"⚠️ Gemini returned status %d. Retrying in %d seconds... (attempt %d/%d)\n",
+				resp.StatusCode,
+				waitSeconds,
+				attempt,
+				maxRetries,
+			)
+
+			time.Sleep(time.Duration(waitSeconds) * time.Second)
+
+			// Re-create the request for the next attempt
+			req, err = http.NewRequest(
+				http.MethodPost,
+				url,
+				bytes.NewBuffer(jsonBody),
+			)
+			if err != nil {
+				return nil, err
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+
+			continue
+		}
+
 		return nil, fmt.Errorf(
 			"Gemini API returned status %d: %s",
 			resp.StatusCode,
