@@ -7,11 +7,17 @@ import (
 	"net/http"
 	"os"
 	"io"
+	"strings"
 )
 
 type Client struct {
 	Token      string
 	Repository string
+}
+
+type IssueComment struct {
+	ID   int64  `json:"id"`
+	Body string `json:"body"`
 }
 
 func NewClient() *Client {
@@ -185,7 +191,7 @@ func (c *Client) AddComment(issueNumber string, comment string) error {
 	)
 }
 
-func (c *Client) GetComments(issueNumber string) ([]string, error) {
+func (c *Client) GetComments(issueNumber string) ([]IssueComment, error) {
 
 	url := fmt.Sprintf(
 		"https://api.github.com/repos/%s/issues/%s/comments",
@@ -224,20 +230,47 @@ func (c *Client) GetComments(issueNumber string) ([]string, error) {
 		)
 	}
 
-	var comments []struct {
-		Body string `json:"body"`
-	}
+	var comments []IssueComment
 
 	err = json.NewDecoder(resp.Body).Decode(&comments)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]string, 0, len(comments))
+	return comments, nil
+}
 
-	for _, comment := range comments {
-		result = append(result, comment.Body)
+func (c *Client) UpdateComment(commentID int64, comment string) error {
+
+	url := fmt.Sprintf(
+		"https://api.github.com/repos/%s/issues/comments/%d",
+		c.Repository,
+		commentID,
+	)
+
+	body := map[string]string{
+		"body": comment,
 	}
 
-	return result, nil
+	return c.request(
+		http.MethodPatch,
+		url,
+		body,
+	)
+}
+
+func (c *Client) GetTriageComment(issueNumber string, marker string) (*IssueComment, error) {
+
+	comments, err := c.GetComments(issueNumber)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, comment := range comments {
+		if strings.Contains(comment.Body, marker) {
+			return &comment, nil
+		}
+	}
+
+	return nil, nil
 }

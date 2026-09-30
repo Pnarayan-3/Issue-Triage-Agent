@@ -30,25 +30,40 @@ func main() {
 	fmt.Println()
 	fmt.Println("🔍 Checking for existing triage comment...")
 
-	comments, err := githubClient.GetComments(issueNumber)
+	triageComment, err := githubClient.GetTriageComment(
+		issueNumber,
+		triage.TriageCommentMarker,
+	)
 
 	if err != nil {
 		fmt.Println("❌ Failed to retrieve issue comments:", err)
 		os.Exit(1)
 	}
 
-	if triage.HasTriageComment(comments) && issueAction == "opened" {
-		fmt.Println("⚠️ Triage comment already exists")
-		fmt.Println("   Issue has already been triaged")
-		fmt.Println("   Skipping AI analysis")
-		fmt.Println()
-		fmt.Println("==============================================")
-		fmt.Println("⏭️ Triage skipped")
-		fmt.Println("==============================================")
-		return
-	}
+	if triageComment != nil {
 
-	fmt.Println("✅ No existing triage comment found")
+		if issueAction == "opened" {
+			fmt.Println("⚠️ Triage comment already exists")
+			fmt.Println("   Issue has already been triaged")
+			fmt.Println("   Skipping AI analysis")
+
+			fmt.Println()
+			fmt.Println("==============================================")
+			fmt.Println("⏭️ Triage skipped")
+			fmt.Println("==============================================")
+
+			return
+		}
+
+		if issueAction == "reopened" {
+			fmt.Println("🔄 Existing triage comment found")
+			fmt.Println("   Issue was reopened")
+			fmt.Println("   Re-running AI analysis")
+		}
+
+	} else {
+		fmt.Println("✅ No existing triage comment found")
+	}
 
 	// AI analysis
 	client := ai.NewClient()
@@ -109,18 +124,37 @@ func main() {
 
 	// Post triage comment
 	fmt.Println()
-	fmt.Println("💬 Posting triage comment...")
-
 	comment := triage.BuildComment(result)
 
-	err = githubClient.AddComment(issueNumber, comment)
+	if triageComment != nil && issueAction == "reopened" {
 
-	if err != nil {
-		fmt.Println("❌ Failed to post triage comment:", err)
-		os.Exit(1)
+		fmt.Println("🔄 Updating existing triage comment...")
+
+		err = githubClient.UpdateComment(
+			triageComment.ID,
+			comment,
+		)
+
+		if err != nil {
+			fmt.Println("❌ Failed to update triage comment:", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ Triage comment updated")
+
+	} else {
+
+		fmt.Println("💬 Posting triage comment...")
+
+		err = githubClient.AddComment(issueNumber, comment)
+
+		if err != nil {
+			fmt.Println("❌ Failed to post triage comment:", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ Triage comment posted")
 	}
-
-	fmt.Println("✅ Triage comment posted")
 
 	// Final result
 	fmt.Println()
