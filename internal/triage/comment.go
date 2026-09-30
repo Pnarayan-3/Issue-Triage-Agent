@@ -12,7 +12,9 @@ func BuildComment(result *ai.TriageResult) string {
 	labels := strings.Join(result.Labels, ", ")
 
 	return fmt.Sprintf(
-		`## 🤖 Automated Issue Triage
+	`<!-- issue-triage-agent -->
+
+	## 🤖 Automated Issue Triage
 
 | Field | Result |
 |---|---|
@@ -48,4 +50,16 @@ func BuildComment(result *ai.TriageResult) string {
 		result.Reason,
 		labels,
 	)
+}
+
+const TriageCommentMarker = "<!-- issue-triage-agent -->"
+
+func HasTriageComment(comments []string) bool {
+	for _, comment := range comments {
+		if strings.Contains(comment, TriageCommentMarker) {
+			return true
+		}
+	}
+
+	return false
 }
