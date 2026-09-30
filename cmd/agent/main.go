@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
-	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/github"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
 )
 
 func main() {
@@ -23,61 +23,9 @@ func main() {
 	fmt.Println("Issue Number:", issueNumber)
 	fmt.Println("Issue Title:", issueTitle)
 
-	client := ai.NewClient()
-
-	fmt.Println("\nSending issue to AI...")
-
-	result, err := client.Analyze(issueTitle, issueBody)
-
-	if err != nil {
-		fmt.Println("❌ AI analysis failed:", err)
-		os.Exit(1)
-	}
-
-	if err := triage.Validate(result); err != nil {
-	fmt.Println("❌ Triage validation failed:", err)
-	os.Exit(1)
-	}
-
-	fmt.Println("✅ Triage result validated")
-
-	labels := triage.BuildLabels(result)
-
-	if triage.RequiresHumanReview(result) {
-		fmt.Println("⚠️ Low confidence triage detected")
-		fmt.Println("   Human review is recommended")
-	} else {
-		fmt.Println("✅ Confidence threshold passed")
-	}
-
 	githubClient := github.NewClient()
 
-	fmt.Println()
-	fmt.Println("🏷️ Checking GitHub labels...")
-
-	err = githubClient.EnsureLabels(labels)
-
-	if err != nil {
-		fmt.Println("❌ Failed to ensure labels:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("✅ All labels are ready")
-
-	fmt.Println()
-	fmt.Println("🏷️ Applying GitHub labels...")
-
-	err = githubClient.AddLabels(issueNumber, labels)
-
-	if err != nil {
-		fmt.Println("❌ Failed to apply labels:", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("✅ Labels applied")
-
-	comment := triage.BuildComment(result)
-
+	// Check whether this issue has already been triaged
 	fmt.Println()
 	fmt.Println("🔍 Checking for existing triage comment...")
 
@@ -90,11 +38,75 @@ func main() {
 
 	if triage.HasTriageComment(comments) {
 		fmt.Println("⚠️ Triage comment already exists")
-		fmt.Println("   Skipping duplicate comment")
-	} else {
+		fmt.Println("   Issue has already been triaged")
+		fmt.Println("   Skipping AI analysis")
+		fmt.Println()
+		fmt.Println("==============================================")
+		fmt.Println("⏭️ Triage skipped")
+		fmt.Println("==============================================")
+		return
+	}
 
 	fmt.Println("✅ No existing triage comment found")
 
+	// AI analysis
+	client := ai.NewClient()
+
+	fmt.Println()
+	fmt.Println("🔍 Sending issue to AI...")
+
+	result, err := client.Analyze(issueTitle, issueBody)
+
+	if err != nil {
+		fmt.Println("❌ AI analysis failed:", err)
+		os.Exit(1)
+	}
+
+	// Validate AI result
+	if err := triage.Validate(result); err != nil {
+		fmt.Println("❌ Triage validation failed:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Triage result validated")
+
+	// Build review status label
+	labels := triage.BuildLabels(result)
+
+	if triage.RequiresHumanReview(result) {
+		fmt.Println("⚠️ Low confidence triage detected")
+		fmt.Println("   Human review is recommended")
+	} else {
+		fmt.Println("✅ Confidence threshold passed")
+	}
+
+	// Ensure GitHub labels exist
+	fmt.Println()
+	fmt.Println("🏷️ Checking GitHub labels...")
+
+	err = githubClient.EnsureLabels(labels)
+
+	if err != nil {
+		fmt.Println("❌ Failed to ensure labels:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ All labels are ready")
+
+	// Apply labels
+	fmt.Println()
+	fmt.Println("🏷️ Applying GitHub labels...")
+
+	err = githubClient.AddLabels(issueNumber, labels)
+
+	if err != nil {
+		fmt.Println("❌ Failed to apply labels:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Labels applied")
+
+	// Post triage comment
 	fmt.Println()
 	fmt.Println("💬 Posting triage comment...")
 
@@ -108,8 +120,8 @@ func main() {
 	}
 
 	fmt.Println("✅ Triage comment posted")
-	}
 
+	// Final result
 	fmt.Println()
 	fmt.Println("==============================================")
 	fmt.Println("📋 TRIAGE RESULT")
@@ -143,5 +155,4 @@ func main() {
 	fmt.Println("==============================================")
 	fmt.Println("✅ Triage completed")
 	fmt.Println("==============================================")
-	//fmt.Println("\n✅ AI analysis completed")
 }
