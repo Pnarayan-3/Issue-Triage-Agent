@@ -13,6 +13,7 @@ func main() {
 	issueNumber := os.Getenv("ISSUE_NUMBER")
 	issueTitle := os.Getenv("ISSUE_TITLE")
 	issueBody := os.Getenv("ISSUE_BODY")
+	issueAction := os.Getenv("ISSUE_ACTION")
 	repository := os.Getenv("REPOSITORY")
 
 	fmt.Println("=================================")
@@ -22,7 +23,7 @@ func main() {
 	fmt.Println("Repository:", repository)
 	fmt.Println("Issue Number:", issueNumber)
 	fmt.Println("Issue Title:", issueTitle)
-
+	fmt.Println("Event:", issueAction)
 	githubClient := github.NewClient()
 
 	// Check whether this issue has already been triaged
@@ -36,7 +37,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	if triage.HasTriageComment(comments) {
+	if triage.HasTriageComment(comments) && issueAction == "opened" {
 		fmt.Println("⚠️ Triage comment already exists")
 		fmt.Println("   Issue has already been triaged")
 		fmt.Println("   Skipping AI analysis")
