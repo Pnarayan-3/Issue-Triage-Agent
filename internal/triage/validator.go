@@ -125,3 +125,7 @@ func isValidComponent(value string) bool{
 		return false
 	}
 }
+
+func RequiresHumanReview(result *ai.TriageResult) bool {
+	return result.Confidence < 0.80
+}

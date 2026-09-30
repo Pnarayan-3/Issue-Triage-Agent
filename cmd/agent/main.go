@@ -40,17 +40,22 @@ func main() {
 	}
 
 	fmt.Println("✅ Triage result validated")
-	
+
+	labels := triage.BuildLabels(result)
+
+	if triage.RequiresHumanReview(result) {
+		fmt.Println("⚠️ Low confidence triage detected")
+		fmt.Println("   Human review is recommended")
+	} else {
+		fmt.Println("✅ Confidence threshold passed")
+	}
 
 	githubClient := github.NewClient()
 
 	fmt.Println()
-	fmt.Println("🏷️ Applying GitHub labels...")
-
-	fmt.Println()
 	fmt.Println("🏷️ Checking GitHub labels...")
 
-	err = githubClient.EnsureLabels(result.Labels)
+	err = githubClient.EnsureLabels(labels)
 
 	if err != nil {
 		fmt.Println("❌ Failed to ensure labels:", err)
@@ -62,7 +67,7 @@ func main() {
 	fmt.Println()
 	fmt.Println("🏷️ Applying GitHub labels...")
 
-	err = githubClient.AddLabels(issueNumber, result.Labels)
+	err = githubClient.AddLabels(issueNumber, labels)
 
 	if err != nil {
 		fmt.Println("❌ Failed to apply labels:", err)
