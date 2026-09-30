@@ -55,6 +55,20 @@ func main() {
 
 	fmt.Println("✅ Labels applied")
 
+	comment := triage.BuildComment(result)
+
+	fmt.Println()
+	fmt.Println("💬 Posting triage comment...")
+
+	err = githubClient.AddComment(issueNumber, comment)
+
+	if err != nil {
+		fmt.Println("❌ Failed to post triage comment:", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("✅ Triage comment posted")
+
 	fmt.Println()
 	fmt.Println("==============================================")
 	fmt.Println("📋 TRIAGE RESULT")
