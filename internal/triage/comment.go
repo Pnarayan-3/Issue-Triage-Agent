@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
-	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/github"
+	
 )
 
 func BuildComment(result *ai.TriageResult) string {
