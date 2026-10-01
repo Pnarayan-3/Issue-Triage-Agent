@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"time"
+	"strings"
 )
 
 type Client struct {
@@ -178,12 +179,37 @@ Body:
 	// fmt.Println("\nAI generated JSON:")
 	// fmt.Println(generatedText)
 
+	jsonText, err := extractJSON(generatedText)
+	if err != nil {
+		return nil, err
+	}
+
 	var result TriageResult
 
-	err = json.Unmarshal([]byte(generatedText), &result)
+	err = json.Unmarshal([]byte(jsonText), &result)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse triage JSON: %w", err)
+		return nil, fmt.Errorf("failed to parse AI response JSON: %w", err)
 	}
 
 	return &result, nil
+}
+
+func extractJSON(text string) (string, error) {
+	text = strings.TrimSpace(text)
+
+	// Remove markdown code fences if Gemini adds them.
+	text = strings.TrimPrefix(text, "```json")
+	text = strings.TrimPrefix(text, "```")
+	text = strings.TrimSuffix(text, "```")
+
+	text = strings.TrimSpace(text)
+
+	start := strings.Index(text, "{")
+	end := strings.LastIndex(text, "}")
+
+	if start == -1 || end == -1 || start >= end {
+		return "", fmt.Errorf("no valid JSON object found in AI response")
+	}
+
+	return text[start : end+1], nil
 }
