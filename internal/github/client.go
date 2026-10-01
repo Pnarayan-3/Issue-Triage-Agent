@@ -8,6 +8,7 @@ import (
 	"os"
 	"io"
 	"strings"
+	"net/url"
 )
 
 type Client struct {
@@ -28,18 +29,12 @@ func NewClient() *Client {
 }
 
 func (c *Client) request(method string, url string, body interface{}) error {
-
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequest(
-		method,
-		url,
-		bytes.NewBuffer(jsonBody),
-	)
-
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
 	if err != nil {
 		return err
 	}
@@ -53,13 +48,15 @@ func (c *Client) request(method string, url string, body interface{}) error {
 	if err != nil {
 		return err
 	}
-
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		responseBody, _ := io.ReadAll(resp.Body)
+
 		return fmt.Errorf(
-			"GitHub API returned status %d",
+			"GitHub API returned status %d: %s",
 			resp.StatusCode,
+			string(responseBody),
 		)
 	}
 
@@ -69,9 +66,9 @@ func (c *Client) request(method string, url string, body interface{}) error {
 func (c *Client) AddLabels(issueNumber string, labels []string) error {
 
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/issues/%s/labels",
+		"https://api.github.com/repos/%s/labels/%s",
 		c.Repository,
-		issueNumber,
+		url.PathEscape(label),
 	)
 
 	body := map[string]interface{}{
