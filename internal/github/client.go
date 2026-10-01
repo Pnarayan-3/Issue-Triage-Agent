@@ -21,6 +21,12 @@ type IssueComment struct {
 	Body string `json:"body"`
 }
 
+type Issue struct {
+	ID     int64  `json:"number"`
+	Title  string `json:"title"`
+	Body   string `json:"body"`
+}
+
 func NewClient() *Client {
 	return &Client{
 		Token:      os.Getenv("GITHUB_TOKEN"),
@@ -270,4 +276,21 @@ func (c *Client) GetTriageComment(issueNumber string, marker string) (*IssueComm
 	}
 
 	return nil, nil
+}
+
+func (c *Client) GetIssue(issueNumber string) (*Issue, error) {
+	var issue Issue
+
+	err := c.request(
+		http.MethodGet,
+		"/repos/"+c.Repository+"/issues/"+issueNumber,
+		nil,
+		&issue,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &issue, nil
 }

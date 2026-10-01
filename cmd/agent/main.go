@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/Pnarayan-3/Issue-Triage-Agent/config"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/github"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/logger"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
-	"github.com/Pnarayan-3/Issue-Triage-Agent/config"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/adapter"
 )
 
 func main() {
@@ -15,7 +17,7 @@ func main() {
 	cfg, err := config.Load()
 
 	if err != nil {
-		fmt.Println("❌ Configuration error:", err)
+		logger.Error("configuration error=%v", err)
 		os.Exit(1)
 	}
 
@@ -25,8 +27,8 @@ func main() {
 	)
 
 	issueNumber := os.Getenv("ISSUE_NUMBER")
-	issueTitle := os.Getenv("ISSUE_TITLE")
-	issueBody := os.Getenv("ISSUE_BODY")
+	// issueTitle := os.Getenv("ISSUE_TITLE")
+	// issueBody := os.Getenv("ISSUE_BODY")
 	issueAction := os.Getenv("ISSUE_ACTION")
 	repository := os.Getenv("REPOSITORY")
 
@@ -36,13 +38,35 @@ func main() {
 
 	fmt.Println("Repository:", repository)
 	fmt.Println("Issue Number:", issueNumber)
-	fmt.Println("Issue Title:", issueTitle)
+	// fmt.Println("Issue Title:", issueTitle)
 	fmt.Println("Event:", issueAction)
+
 	githubClient := github.NewClient()
+
+	githubAdapter := adapter.NewGitHubAdapter(githubClient)
+
+	currentIssue, err := githubAdapter.GetIssue(issueNumber)
+	if err != nil {
+		logger.Error(
+			"issue=%s stage=issue_fetch error=%v",
+			issueNumber,
+			err,
+		)
+		os.Exit(1)
+	}
+
+	logger.Success(
+		"issue=%s stage=issue_fetch status=loaded source=%s",
+		currentIssue.ID,
+		currentIssue.Source,
+	)
 
 	// Check whether this issue has already been triaged
 	fmt.Println()
-	fmt.Println("🔍 Checking for existing triage comment...")
+	logger.Info(
+		"issue=%s stage=triage_check",
+		issueNumber,
+	)
 
 	triageComment, err := githubClient.GetTriageComment(
 		issueNumber,
@@ -50,14 +74,22 @@ func main() {
 	)
 
 	if err != nil {
-		fmt.Println("❌ Failed to retrieve issue comments:", err)
+		logger.Error(
+			"issue=%s stage=triage_check error=%v",
+			issueNumber,
+			err,
+		)
 		os.Exit(1)
 	}
 
 	if triageComment != nil {
 
 		if issueAction == "opened" {
-			fmt.Println("⚠️ Triage comment already exists")
+			logger.Warn(
+				"issue=%s stage=triage_check status=already_triaged",
+				issueNumber,
+			)
+
 			fmt.Println("   Issue has already been triaged")
 			fmt.Println("   Skipping AI analysis")
 
@@ -70,39 +102,67 @@ func main() {
 		}
 
 		if issueAction == "reopened" {
-			fmt.Println("🔄 Existing triage comment found")
-			fmt.Println("   Issue was reopened")
+			logger.Info(
+				"issue=%s stage=triage_check action=reopened",
+				issueNumber,
+			)
+
+			fmt.Println("   Existing triage comment found")
 			fmt.Println("   Re-running AI analysis")
 		}
 
 	} else {
-		fmt.Println("✅ No existing triage comment found")
+		logger.Success(
+			"issue=%s stage=triage_check status=no_existing_triage",
+			issueNumber,
+		)
 	}
 
 	// AI analysis
 	client := ai.NewClient(cfg)
 
 	fmt.Println()
-	fmt.Println("🔍 Sending issue to AI...")
+	logger.Info(
+		"issue=%s stage=ai_analysis",
+		issueNumber,
+	)
 
-	result, err := client.Analyze(issueTitle, issueBody)
+	result, err := client.Analyze(
+		currentIssue.Title,
+		currentIssue.Body,
+	)
 
 	if err != nil {
-		fmt.Println("❌ AI analysis failed:", err)
+		logger.Error(
+			"issue=%s stage=ai_analysis error=%v",
+			issueNumber,
+			err,
+		)
 		os.Exit(1)
 	}
 
 	// Validate AI result
 	if err := triage.Validate(result); err != nil {
-		fmt.Println("❌ Triage validation failed:", err)
+		logger.Error(
+			"issue=%s stage=validation error=%v",
+			issueNumber,
+			err,
+		)
 		os.Exit(1)
 	}
 
 	team := triage.RouteTeam(result)
 
-	fmt.Println("🎯 Routing decision:", team)
+	logger.Success(
+		"issue=%s stage=validation status=passed",
+		issueNumber,
+	)
 
-	fmt.Println("✅ Triage result validated")
+	logger.Info(
+		"issue=%s stage=routing team=%s",
+		issueNumber,
+		team,
+	)
 
 	// Build review status label
 	labels := triage.BuildLabels(
@@ -110,47 +170,86 @@ func main() {
 		cfg.ConfidenceThreshold,
 	)
 
-	if triage.RequiresHumanReview(result,cfg.ConfidenceThreshold,)	 
-	{
-		fmt.Println("⚠️ Low confidence triage detected")
-		fmt.Println("   Human review is recommended")
+	// Confidence and review decision
+	logger.Info(
+		"issue=%s confidence=%.2f threshold=%.2f",
+		issueNumber,
+		result.Confidence,
+		cfg.ConfidenceThreshold,
+	)
+
+	if triage.RequiresHumanReview(
+		result,
+		cfg.ConfidenceThreshold,
+	) {
+		logger.Warn(
+			"issue=%s stage=review decision=human_review_required",
+			issueNumber,
+		)
 	} else {
-		fmt.Println("✅ Confidence threshold passed")
+		logger.Success(
+			"issue=%s stage=review decision=auto_review",
+			issueNumber,
+		)
 	}
 
 	// Ensure GitHub labels exist
 	fmt.Println()
-	fmt.Println("🏷️ Checking GitHub labels...")
+	logger.Info(
+		"issue=%s stage=github_labels action=ensure",
+		issueNumber,
+	)
 
 	err = githubClient.EnsureLabels(labels)
 
 	if err != nil {
-		fmt.Println("❌ Failed to ensure labels:", err)
+		logger.Error(
+			"issue=%s stage=github_labels action=ensure error=%v",
+			issueNumber,
+			err,
+		)
 		os.Exit(1)
 	}
 
-	fmt.Println("✅ All labels are ready")
+	logger.Success(
+		"issue=%s stage=github_labels status=ready",
+		issueNumber,
+	)
 
 	// Apply labels
 	fmt.Println()
-	fmt.Println("🏷️ Applying GitHub labels...")
+	logger.Info(
+		"issue=%s stage=github_labels action=apply",
+		issueNumber,
+	)
 
 	err = githubClient.AddLabels(issueNumber, labels)
 
 	if err != nil {
-		fmt.Println("❌ Failed to apply labels:", err)
+		logger.Error(
+			"issue=%s stage=github_labels action=apply error=%v",
+			issueNumber,
+			err,
+		)
 		os.Exit(1)
 	}
 
-	fmt.Println("✅ Labels applied")
+	logger.Success(
+		"issue=%s stage=github_labels status=applied",
+		issueNumber,
+	)
 
-	// Post triage comment
+	// Post or update triage comment
 	fmt.Println()
+
 	comment := triage.BuildComment(result)
 
 	if triageComment != nil && issueAction == "reopened" {
 
-		fmt.Println("🔄 Updating existing triage comment...")
+		logger.Info(
+			"issue=%s stage=triage_comment action=update",
+			issueNumber,
+		)
 
 		err = githubClient.UpdateComment(
 			triageComment.ID,
@@ -158,24 +257,41 @@ func main() {
 		)
 
 		if err != nil {
-			fmt.Println("❌ Failed to update triage comment:", err)
+			logger.Error(
+				"issue=%s stage=triage_comment action=update error=%v",
+				issueNumber,
+				err,
+			)
 			os.Exit(1)
 		}
 
-		fmt.Println("✅ Triage comment updated")
+		logger.Success(
+			"issue=%s stage=triage_comment status=updated",
+			issueNumber,
+		)
 
 	} else {
 
-		fmt.Println("💬 Posting triage comment...")
+		logger.Info(
+			"issue=%s stage=triage_comment action=create",
+			issueNumber,
+		)
 
 		err = githubClient.AddComment(issueNumber, comment)
 
 		if err != nil {
-			fmt.Println("❌ Failed to post triage comment:", err)
+			logger.Error(
+				"issue=%s stage=triage_comment action=create error=%v",
+				issueNumber,
+				err,
+			)
 			os.Exit(1)
 		}
 
-		fmt.Println("✅ Triage comment posted")
+		logger.Success(
+			"issue=%s stage=triage_comment status=posted",
+			issueNumber,
+		)
 	}
 
 	// Final result
