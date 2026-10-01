@@ -29,7 +29,7 @@ jobs:
             GEMINI_MAX_RETRIES: "3"
             GEMINI_RETRY_DELAY_SECONDS: "1"
             TRIAGE_CONFIDENCE_THRESHOLD: "0.80"
-            JIRA_ISSUE_KEY: "YOUR-ISSUE-KEY"
+            JIRA_ISSUE_KEY: "SAM1-3"
           
         run: |
           go run ./cmd/jira-triage
