@@ -80,7 +80,7 @@ func main() {
 	}
 
 	// AI analysis
-	client := ai.NewClient()
+	client := ai.NewClient(cfg)
 
 	fmt.Println()
 	fmt.Println("🔍 Sending issue to AI...")

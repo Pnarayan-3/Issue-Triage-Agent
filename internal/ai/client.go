@@ -7,12 +7,17 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"time"
 	"strings"
+	"time"
+
+	"github.com/Pnarayan-3/Issue-Triage-Agent/config"
 )
 
 type Client struct {
-	APIKey string
+	APIKey            string
+	Model             string
+	MaxRetries        int
+	RetryDelaySeconds int
 }
 
 type GeminiResponse struct {
@@ -31,9 +36,12 @@ type Part struct {
 	Text string `json:"text"`
 }
 
-func NewClient() *Client {
+func NewClient(cfg *config.Config) *Client {
 	return &Client{
-		APIKey: os.Getenv("GEMINI_API_KEY"),
+		APIKey:            os.Getenv("GEMINI_API_KEY"),
+		Model:             cfg.GeminiModel,
+		MaxRetries:        cfg.MaxRetries,
+		RetryDelaySeconds: cfg.RetryDelaySeconds,
 	}
 }
 
@@ -72,29 +80,26 @@ Body:
 		return nil, err
 	}
 
-	// url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + c.APIKey
-	//url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + c.APIKey
-	//url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=" + c.APIKey
-	//url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=" + c.APIKey
-	url := "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + c.APIKey
-
-	req, err := http.NewRequest(
-		http.MethodPost,
-		url,
-		bytes.NewBuffer(jsonBody),
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-
-	const maxRetries = 3
+	url := "https://generativelanguage.googleapis.com/v1beta/models/" +
+		c.Model +
+		":generateContent?key=" +
+		c.APIKey
 
 	var responseBody []byte
 
-	for attempt := 1; attempt <= maxRetries; attempt++ {
+	for attempt := 1; attempt <= c.MaxRetries; attempt++ {
+
+		req, err := http.NewRequest(
+			http.MethodPost,
+			url,
+			bytes.NewBuffer(jsonBody),
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("Content-Type", "application/json")
 
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
@@ -112,42 +117,30 @@ Body:
 			break
 		}
 
-		// Retry temporary Gemini errors
+		// Retry temporary Gemini errors.
 		if resp.StatusCode == http.StatusServiceUnavailable ||
 			resp.StatusCode == http.StatusTooManyRequests {
 
-			if attempt == maxRetries {
+			if attempt == c.MaxRetries {
 				return nil, fmt.Errorf(
 					"Gemini API failed after %d attempts: status %d: %s",
-					maxRetries,
+					c.MaxRetries,
 					resp.StatusCode,
 					string(responseBody),
 				)
 			}
 
-			waitSeconds := 1 << (attempt - 1)
+			waitSeconds := c.RetryDelaySeconds * attempt
 
 			fmt.Printf(
 				"⚠️ Gemini returned status %d. Retrying in %d seconds... (attempt %d/%d)\n",
 				resp.StatusCode,
 				waitSeconds,
 				attempt,
-				maxRetries,
+				c.MaxRetries,
 			)
 
 			time.Sleep(time.Duration(waitSeconds) * time.Second)
-
-			// Re-create the request for the next attempt
-			req, err = http.NewRequest(
-				http.MethodPost,
-				url,
-				bytes.NewBuffer(jsonBody),
-			)
-			if err != nil {
-				return nil, err
-			}
-
-			req.Header.Set("Content-Type", "application/json")
 
 			continue
 		}
@@ -175,9 +168,6 @@ Body:
 	}
 
 	generatedText := geminiResponse.Candidates[0].Content.Parts[0].Text
-
-	// fmt.Println("\nAI generated JSON:")
-	// fmt.Println(generatedText)
 
 	jsonText, err := extractJSON(generatedText)
 	if err != nil {

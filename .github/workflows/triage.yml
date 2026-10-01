@@ -31,5 +31,9 @@ jobs:
           ISSUE_ACTION: ${{ github.event.action }}
           REPOSITORY: ${{ github.repository }}
           TRIAGE_CONFIDENCE_THRESHOLD: "0.80"
+
+          GEMINI_MODEL: "YOUR_CURRENT_WORKING_MODEL"
+          GEMINI_MAX_RETRIES: "3"
+          GEMINI_RETRY_DELAY_SECONDS: "1"
         run: |
           go run ./cmd/agent
