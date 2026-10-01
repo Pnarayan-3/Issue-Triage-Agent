@@ -7,9 +7,23 @@ import (
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/ai"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/github"
 	"github.com/Pnarayan-3/Issue-Triage-Agent/internal/triage"
+	"github.com/Pnarayan-3/Issue-Triage-Agent/config"
 )
 
 func main() {
+
+	cfg, err := config.Load()
+
+	if err != nil {
+		fmt.Println("❌ Configuration error:", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf(
+		"⚙️ Confidence threshold: %.0f%%\n",
+		cfg.ConfidenceThreshold*100,
+	)
+
 	issueNumber := os.Getenv("ISSUE_NUMBER")
 	issueTitle := os.Getenv("ISSUE_TITLE")
 	issueBody := os.Getenv("ISSUE_BODY")
@@ -91,9 +105,13 @@ func main() {
 	fmt.Println("✅ Triage result validated")
 
 	// Build review status label
-	labels := triage.BuildLabels(result)
+	labels := triage.BuildLabels(
+		result,
+		cfg.ConfidenceThreshold,
+	)
 
-	if triage.RequiresHumanReview(result) {
+	if triage.RequiresHumanReview(result,cfg.ConfidenceThreshold,)	 
+	{
 		fmt.Println("⚠️ Low confidence triage detected")
 		fmt.Println("   Human review is recommended")
 	} else {

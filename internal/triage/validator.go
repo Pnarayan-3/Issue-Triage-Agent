@@ -130,8 +130,8 @@ func isValidComponent(value string) bool{
 	}
 }
 
-func RequiresHumanReview(result *ai.TriageResult) bool {
-	return result.Confidence < 0.80
+func RequiresHumanReview(result *ai.TriageResult, threshold float64) bool {
+	return result.Confidence < threshold
 }
 
 func isValidTeam(value string) bool {

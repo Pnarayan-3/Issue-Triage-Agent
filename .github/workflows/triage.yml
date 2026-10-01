@@ -30,5 +30,6 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_ACTION: ${{ github.event.action }}
           REPOSITORY: ${{ github.repository }}
+          TRIAGE_CONFIDENCE_THRESHOLD: "0.80"
         run: |
           go run ./cmd/agent
