@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"os"
 	"io"
-	"strings"
+	"net/http"
 	"net/url"
+	"os"
+	"strings"
 )
 
 type Client struct {
@@ -22,9 +22,9 @@ type IssueComment struct {
 }
 
 type Issue struct {
-	ID     int64  `json:"number"`
-	Title  string `json:"title"`
-	Body   string `json:"body"`
+	ID    int64  `json:"number"`
+	Title string `json:"title"`
+	Body  string `json:"body"`
 }
 
 func NewClient() *Client {
@@ -40,7 +40,11 @@ func (c *Client) request(method string, url string, body interface{}) error {
 		return err
 	}
 
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(jsonBody))
+	req, err := http.NewRequest(
+		method,
+		url,
+		bytes.NewBuffer(jsonBody),
+	)
 	if err != nil {
 		return err
 	}
@@ -70,11 +74,10 @@ func (c *Client) request(method string, url string, body interface{}) error {
 }
 
 func (c *Client) AddLabels(issueNumber string, labels []string) error {
-
 	url := fmt.Sprintf(
-		"https://api.github.com/repos/%s/labels/%s",
+		"https://api.github.com/repos/%s/issues/%s/labels",
 		c.Repository,
-		url.PathEscape(label),
+		issueNumber,
 	)
 
 	body := map[string]interface{}{
@@ -89,7 +92,6 @@ func (c *Client) AddLabels(issueNumber string, labels []string) error {
 }
 
 func (c *Client) CreateLabel(label string) error {
-
 	url := fmt.Sprintf(
 		"https://api.github.com/repos/%s/labels",
 		c.Repository,
@@ -109,18 +111,16 @@ func (c *Client) CreateLabel(label string) error {
 }
 
 func (c *Client) EnsureLabels(labels []string) error {
-
 	for _, label := range labels {
-
-		url := fmt.Sprintf(
+		labelURL := fmt.Sprintf(
 			"https://api.github.com/repos/%s/labels/%s",
 			c.Repository,
-			label,
+			url.PathEscape(label),
 		)
 
 		req, err := http.NewRequest(
 			http.MethodGet,
-			url,
+			labelURL,
 			nil,
 		)
 
@@ -133,7 +133,6 @@ func (c *Client) EnsureLabels(labels []string) error {
 		req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 
 		resp, err := http.DefaultClient.Do(req)
-
 		if err != nil {
 			return err
 		}
@@ -176,7 +175,6 @@ func (c *Client) EnsureLabels(labels []string) error {
 }
 
 func (c *Client) AddComment(issueNumber string, comment string) error {
-
 	url := fmt.Sprintf(
 		"https://api.github.com/repos/%s/issues/%s/comments",
 		c.Repository,
@@ -195,7 +193,6 @@ func (c *Client) AddComment(issueNumber string, comment string) error {
 }
 
 func (c *Client) GetComments(issueNumber string) ([]IssueComment, error) {
-
 	url := fmt.Sprintf(
 		"https://api.github.com/repos/%s/issues/%s/comments",
 		c.Repository,
@@ -244,7 +241,6 @@ func (c *Client) GetComments(issueNumber string) ([]IssueComment, error) {
 }
 
 func (c *Client) UpdateComment(commentID int64, comment string) error {
-
 	url := fmt.Sprintf(
 		"https://api.github.com/repos/%s/issues/comments/%d",
 		c.Repository,
@@ -262,7 +258,10 @@ func (c *Client) UpdateComment(commentID int64, comment string) error {
 	)
 }
 
-func (c *Client) GetTriageComment(issueNumber string, marker string) (*IssueComment, error) {
+func (c *Client) GetTriageComment(
+	issueNumber string,
+	marker string,
+) (*IssueComment, error) {
 
 	comments, err := c.GetComments(issueNumber)
 	if err != nil {
@@ -279,17 +278,51 @@ func (c *Client) GetTriageComment(issueNumber string, marker string) (*IssueComm
 }
 
 func (c *Client) GetIssue(issueNumber string) (*Issue, error) {
-	var issue Issue
+	apiURL := fmt.Sprintf(
+		"https://api.github.com/repos/%s/issues/%s",
+		c.Repository,
+		issueNumber,
+	)
 
-	err := c.request(
+	req, err := http.NewRequest(
 		http.MethodGet,
-		"/repos/"+c.Repository+"/issues/"+issueNumber,
+		apiURL,
 		nil,
-		&issue,
 	)
 
 	if err != nil {
 		return nil, err
+	}
+
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		responseBody, _ := io.ReadAll(resp.Body)
+
+		return nil, fmt.Errorf(
+			"GitHub API returned status %d: %s",
+			resp.StatusCode,
+			string(responseBody),
+		)
+	}
+
+	var issue Issue
+
+	err = json.NewDecoder(resp.Body).Decode(&issue)
+	if err != nil {
+		return nil, fmt.Errorf(
+			"failed to parse GitHub issue response: %w",
+			err,
+		)
 	}
 
 	return &issue, nil
