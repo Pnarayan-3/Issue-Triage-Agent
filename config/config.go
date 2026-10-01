@@ -11,6 +11,7 @@ type Config struct {
 	GeminiModel         string
 	MaxRetries          int
 	RetryDelaySeconds   int
+	IssueSource 		string
 }
 
 func Load() (*Config, error) {
@@ -18,6 +19,12 @@ func Load() (*Config, error) {
 	geminiModel := "YOUR_CURRENT_WORKING_MODEL"
 	maxRetries := 3
 	retryDelaySeconds := 1
+
+	issueSource := os.Getenv("ISSUE_SOURCE")
+
+	if issueSource == "" {
+		issueSource = "github"
+	}
 
 	if value := os.Getenv("TRIAGE_CONFIDENCE_THRESHOLD"); value != "" {
 		parsed, err := strconv.ParseFloat(value, 64)
@@ -82,5 +89,6 @@ func Load() (*Config, error) {
 		GeminiModel:         geminiModel,
 		MaxRetries:          maxRetries,
 		RetryDelaySeconds:   retryDelaySeconds,
+		IssueSource:         issueSource,
 	}, nil
 }

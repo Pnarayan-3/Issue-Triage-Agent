@@ -1,0 +1,35 @@
+name: Jira Adapter Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  jira-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+
+      - name: Test Jira Adapter
+        env:
+            JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+            JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+            JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+            GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+            GEMINI_MODEL: "gemini-3.5-flash-lite"
+            GEMINI_MAX_RETRIES: "3"
+            GEMINI_RETRY_DELAY_SECONDS: "1"
+            TRIAGE_CONFIDENCE_THRESHOLD: "0.80"
+            JIRA_ISSUE_KEY: "YOUR-ISSUE-KEY"
+          
+        run: |
+          go run ./cmd/jira-triage

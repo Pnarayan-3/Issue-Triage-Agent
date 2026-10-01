@@ -43,9 +43,28 @@ func main() {
 
 	githubClient := github.NewClient()
 
-	githubAdapter := adapter.NewGitHubAdapter(githubClient)
+	issueAdapter, err := adapter.NewAdapter(
+		cfg,
+		githubClient,
+	)
+	if err != nil {
+		logger.Error(
+			"stage=adapter_initialization error=%v",
+			err,
+		)
+		os.Exit(1)
+	}
 
-	currentIssue, err := githubAdapter.GetIssue(issueNumber)
+	currentIssue, err := issueAdapter.GetIssue(issueNumber)
+	if err != nil {
+		logger.Error(
+			"issue=%s stage=issue_fetch error=%v",
+			issueNumber,
+			err,
+		)
+		os.Exit(1)
+	}
+
 	if err != nil {
 		logger.Error(
 			"issue=%s stage=issue_fetch error=%v",

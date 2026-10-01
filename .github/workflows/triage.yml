@@ -25,15 +25,21 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
           ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
           ISSUE_ACTION: ${{ github.event.action }}
           REPOSITORY: ${{ github.repository }}
+
+          ISSUE_SOURCE: "github"
+
           TRIAGE_CONFIDENCE_THRESHOLD: "0.80"
 
-          GEMINI_MODEL: "YOUR_CURRENT_WORKING_MODEL"
+          GEMINI_MODEL: "gemini-3.5-flash-lite"
           GEMINI_MAX_RETRIES: "3"
           GEMINI_RETRY_DELAY_SECONDS: "1"
+
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
         run: |
           go run ./cmd/agent
