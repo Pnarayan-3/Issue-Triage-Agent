@@ -9,13 +9,14 @@ import (
 )
 
 func BuildComment(result *ai.TriageResult) string {
+	team := RouteTeam(result)
 
 	labels := strings.Join(result.Labels, ", ")
 
 	return fmt.Sprintf(
 	`<!-- issue-triage-agent -->
 
-	## 🤖 Automated Issue Triage
+## 🤖 Automated Issue Triage
 
 | Field | Result |
 |---|---|
@@ -24,6 +25,7 @@ func BuildComment(result *ai.TriageResult) string {
 | **Severity** | %s |
 | **Component** | %s |
 | **Team** | %s |
+| **Routing** | %s |
 | **Confidence** | %.0f%% |
 
 ### 📝 Summary
@@ -40,12 +42,13 @@ func BuildComment(result *ai.TriageResult) string {
 
 ---
 
-*This triage was generated automatically by Issue Triage Agent.*`,
+	*This triage was generated automatically by Issue Triage Agent.*`,
 		result.Type,
 		result.Priority,
 		result.Severity,
 		result.Component,
 		result.Team,
+		team,
 		result.Confidence*100,
 		result.Summary,
 		result.Reason,

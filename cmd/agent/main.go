@@ -84,6 +84,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	team := triage.RouteTeam(result)
+
+	fmt.Println("🎯 Routing decision:", team)
+
 	fmt.Println("✅ Triage result validated")
 
 	// Build review status label

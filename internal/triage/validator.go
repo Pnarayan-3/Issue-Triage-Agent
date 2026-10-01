@@ -29,6 +29,10 @@ func Validate(result *ai.TriageResult) error {
 		return fmt.Errorf("invalid component: %s", result.Component)
 	}
 
+	if !isValidTeam(result.Team) {
+		return fmt.Errorf("invalid team: %s", result.Team)
+	}
+
 	if result.Confidence < 0 || result.Confidence > 1 {
 		return fmt.Errorf(
 			"confidence must be between 0 and 1: %.2f",
@@ -128,4 +132,21 @@ func isValidComponent(value string) bool{
 
 func RequiresHumanReview(result *ai.TriageResult) bool {
 	return result.Confidence < 0.80
+}
+
+func isValidTeam(value string) bool {
+	switch value {
+	case "BACKEND",
+		"FRONTEND",
+		"DATABASE",
+		"DEVOPS",
+		"INFRASTRUCTURE",
+		"SECURITY",
+		"DOCUMENTATION",
+		"UNKNOWN":
+		return true
+
+	default:
+		return false
+	}
 }

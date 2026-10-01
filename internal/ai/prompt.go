@@ -42,6 +42,19 @@ Determine:
 3. Severity
 4. Component
 5. Responsible team
+
+Allowed teams:
+- BACKEND
+- FRONTEND
+- DATABASE
+- DEVOPS
+- INFRASTRUCTURE
+- SECURITY
+- DOCUMENTATION
+- UNKNOWN
+
+Use UNKNOWN when the responsible team cannot be determined.
+
 6. Useful labels
 7. Short summary
 8. Reason
