@@ -32,7 +32,7 @@ It reads an issue, analyzes its title and description using Configurable Generat
 
 ---
 
-# 🎯 Problem Statement
+## 🎯 Problem Statement
 
 A typical software issue may require a developer or triage engineer to determine:
 
@@ -50,9 +50,9 @@ The Issue Triage Agent automates this first-level classification while keeping a
 
 ---
 
-# ✨ Features
+## ✨ Features
 
-## Core Features
+### Core Features
 
 - 🤖 AI-powered issue classification
 - 🐛 Issue type detection
@@ -74,19 +74,18 @@ The Issue Triage Agent automates this first-level classification while keeping a
 
 ---
 
-# 🧠 AI Classification
+## 🧠 AI Classification
 
 The agent asks Configurable Generative AI Model to classify each issue using predefined categories.
 
-## Issue Type
-## Priority
-## Severity
-## Component
-## Team
+### Issue Type
+### Priority
+### Severity
+### Component
+### Team
+### Confidence-Based Review
 
-## Confidence-Based Review
-
-# 🏗️ Architecture
+## 🏗️ Architecture
 
                     ┌──────────────────────┐
                     │      GitHub Issue    │
@@ -130,7 +129,7 @@ The agent asks Configurable Generative AI Model to classify each issue using pre
           │ Reopened Update  │   │ Comments         │
           └──────────────────┘   └──────────────────┘
 
-# 🎫 Jira Integration
+## 🎫 Jira Integration
 
 The project also supports Jira Issues through a dedicated Jira adapter.
 
@@ -147,11 +146,11 @@ Adding a triage comment
 Detecting existing triage comments
 Preventing duplicate triage
 
-# 🔁 AI API Retry Handling
+## 🔁 AI API Retry Handling
 
 Temporary API failures are handled using configurable retries.
 
-# 🐳 Docker
+## 🐳 Docker
 
 The project includes a multi-stage Dockerfile.
 
@@ -164,15 +163,15 @@ Run Container: docker run --rm \
   -e REPOSITORY=owner/repository \
   issue-triage-agent
 
-# 🧪 Testing
+## 🧪 Testing
 
 The project contains unit tests for the core triage logic.
 
-# 🔍 Code Quality
+## 🔍 Code Quality
 
 Standard Go development tools can be used to verify the project.
 
-# 👨‍💻 Author
+## 👨‍💻 Author
 
 Pushkar Narayan
 
